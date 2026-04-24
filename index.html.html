@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aqive 經銷商訂貨 & 優惠組合計算工具</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+:root{--bg:#f7f5f2;--surface:#fff;--surface2:#f0ede8;--border:#e0dbd3;--text:#1a1814;--text2:#6b6560;--text3:#9e9890;--accent:#c17f3a;--accent-light:#f5e8d6;--accent-dark:#8c5a20;--red:#c04a3a;--red-light:#fae8e5;--green:#3a7c5a;--green-light:#e5f2ea;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6;}
+.app-header{background:var(--text);color:white;padding:14px 28px;display:flex;align-items:center;justify-content:space-between;}
+.app-header .brand{font-size:15px;font-weight:500;letter-spacing:.05em;}
+.app-header .sub{font-size:11px;opacity:.5;letter-spacing:.1em;margin-top:2px;}
+.tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);padding:0 28px;}
+.tab-btn{padding:13px 20px;background:none;border:none;border-bottom:2px solid transparent;font-family:inherit;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;transition:all .2s;letter-spacing:.02em;}
+.tab-btn.active{color:var(--text);border-bottom-color:var(--accent);}
+.tab-btn:hover:not(.active){color:var(--text);}
+.tab-content{display:none;padding:22px 28px;max-width:1100px;margin:0 auto;}
+.tab-content.active{display:block;}
+.section-title{font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--text3);text-transform:uppercase;margin-bottom:10px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:14px;}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start;}
+.col{flex:1;min-width:130px;}
+label{display:block;font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:500;}
+input,select{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none;transition:border .15s;}
+input:focus,select:focus{border-color:var(--accent);background:white;}
+input[type=number]{-moz-appearance:textfield;}
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
+button{font-family:inherit;cursor:pointer;border:none;border-radius:6px;font-size:13px;font-weight:500;transition:all .15s;}
+.btn-primary{background:var(--text);color:white;padding:8px 16px;}
+.btn-primary:hover{background:#333;}
+.btn-ghost{background:none;color:var(--text2);border:1px solid var(--border);padding:6px 12px;font-size:12px;}
+.btn-ghost:hover{background:var(--bg);color:var(--text);}
+.btn-danger{background:none;color:var(--red);border:none;padding:3px 7px;font-size:17px;line-height:1;}
+.btn-sm{padding:5px 10px;font-size:12px;}
+.tbl{width:100%;border-collapse:collapse;font-size:13px;}
+.tbl th{background:var(--surface2);padding:7px 9px;text-align:left;font-weight:600;font-size:11px;color:var(--text2);letter-spacing:.04em;border-bottom:1px solid var(--border);}
+.tbl td{padding:8px 9px;border-bottom:1px solid var(--bg);vertical-align:middle;}
+.tbl tr:hover td{background:#fafaf8;}
+.tbl .num{text-align:right;font-variant-numeric:tabular-nums;}
+.tbl .center{text-align:center;}
+.total-row{background:var(--text);color:white;border-radius:8px;padding:13px 16px;display:flex;justify-content:space-between;align-items:center;margin-top:4px;}
+.total-row .lbl{font-size:12px;opacity:.7;}
+.total-row .val{font-size:20px;font-weight:700;}
+.copy-box{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:13px 16px;font-size:13px;white-space:pre-wrap;line-height:1.85;font-family:'Noto Sans TC',monospace;color:var(--text);}
+.copy-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:11px 13px;}
+.stat-card .s-lbl{font-size:11px;color:var(--text3);margin-bottom:3px;}
+.stat-card .s-val{font-size:17px;font-weight:700;color:var(--text);}
+.stat-card .s-sub{font-size:11px;color:var(--text2);margin-top:2px;}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;}
+.badge-green{background:var(--green-light);color:var(--green);}
+.badge-amber{background:var(--accent-light);color:var(--accent-dark);}
+.badge-red{background:var(--red-light);color:var(--red);}
+.add-row-btn{width:100%;padding:9px;background:none;border:1px dashed var(--border);border-radius:6px;color:var(--text2);font-family:inherit;font-size:13px;cursor:pointer;transition:all .15s;margin-top:8px;}
+.add-row-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-light);}
+.divider{border:none;border-top:1px solid var(--border);margin:14px 0;}
+.info-panel{background:var(--accent-light);border:1px solid #e8c990;border-radius:8px;padding:12px 14px;margin-bottom:12px;font-size:13px;}
+.info-panel .ip-row{display:flex;gap:6px;margin-bottom:5px;align-items:flex-start;}
+.ip-row .ip-lbl{font-size:11px;color:var(--accent-dark);font-weight:700;white-space:nowrap;min-width:68px;padding-top:1px;}
+.ip-row .ip-val{font-size:13px;color:var(--text);white-space:pre-wrap;line-height:1.5;}
+.note-box{background:#fff8ec;border:1px solid #f5d08a;border-radius:6px;padding:8px 12px;font-size:12px;color:#8a6010;margin-bottom:8px;}
+.gift-box{background:var(--green-light);border:1px solid #9fe1c0;border-radius:6px;padding:8px 12px;font-size:12px;color:var(--green);}
+.addr-tabs{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;}
+.addr-tab{padding:4px 12px;border:1px solid var(--border);border-radius:20px;font-size:12px;cursor:pointer;background:var(--bg);color:var(--text2);transition:all .15s;}
+.addr-tab.active{background:var(--text);color:white;border-color:var(--text);}
+.margin-bar{height:5px;border-radius:3px;background:var(--border);overflow:hidden;margin-top:4px;}
+.margin-fill{height:100%;border-radius:3px;transition:width .4s ease;}
+.margin-good{background:var(--green);}
+.margin-mid{background:var(--accent);}
+.margin-low{background:var(--red);}
+.combo-row{display:grid;grid-template-columns:2fr 70px 95px 95px 36px;gap:7px;align-items:center;padding:7px 0;border-bottom:1px solid var(--bg);}
+.combo-row.hdr{font-size:11px;color:var(--text3);font-weight:600;letter-spacing:.04em;padding-bottom:5px;}
+.tag369{display:inline-block;background:#f0e8ff;color:#5a3a99;padding:1px 6px;border-radius:4px;font-size:11px;font-weight:700;margin-left:4px;}
+.link-hint{font-size:11px;color:var(--accent-dark);margin-top:4px;}
+.link-hint a{color:var(--accent-dark);}
+
+/* 複製按鈕成功狀態 */
+.btn-copy-success{background:var(--green)!important;color:white!important;border-color:var(--green)!important;}
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div><div class="brand">Aqive 經銷商訂貨 &amp; 優惠組合計算工具</div></div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('order')">訂貨計算</button>
+  <button class="tab-btn" onclick="switchTab('combo')">優惠組合試算</button>
+</div>
+
+<!-- ════════════════════ TAB A ════════════════════ -->
+<div id="tab-order" class="tab-content active">
+
+  <!-- Shopify 建立訂單提醒（便利貼） -->
+  <div style="background:#fef9c3;border:1px solid #f0d940;border-radius:10px;padding:14px 18px;margin-bottom:14px;box-shadow:2px 3px 8px rgba(0,0,0,.07)">
+    <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px">
+      <span style="font-size:15px">📋</span>
+      <div style="font-size:11px;font-weight:700;letter-spacing:.08em;color:#7a6800;text-transform:uppercase">建立訂單提醒</div>
+    </div>
+    <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:7px">
+      <li style="display:flex;gap:8px;align-items:flex-start;font-size:13px;color:#3a3000">
+        <span style="color:#b8960a;flex-shrink:0">▸</span>
+        <span>開立發票動作由<strong>出貨部</strong>執行；發票內容（抬頭、統編、載具等）須由<strong>業務部</strong>填寫完成後再交付</span>
+      </li>
+      <li style="display:flex;gap:8px;align-items:flex-start;font-size:13px;color:#3a3000">
+        <span style="color:#b8960a;flex-shrink:0">▸</span>
+        <span>新增備註：<strong>經銷商待開發票</strong><span style="display:inline-block;margin-left:6px;background:#fff3b0;border:1px solid #e8c910;border-radius:4px;padding:1px 7px;font-size:11px;color:#7a5c00;font-weight:600">若海外訂單地址為台灣 → 需加寫「開立台灣發票」</span></span>
+      </li>
+      <li style="display:flex;gap:8px;align-items:flex-start;font-size:13px;color:#3a3000">
+        <span style="color:#b8960a;flex-shrink:0">▸</span>
+        <span><strong>一單一包裹</strong>；若經銷商臨時追加品項，請<strong>另建新訂單</strong>或<strong>取消原單重建</strong></span>
+      </li>
+      <li style="display:flex;gap:8px;align-items:flex-start;font-size:13px;color:#7a5000;background:#fff3dc;border-radius:6px;padding:7px 10px">
+        <span style="flex-shrink:0">⚠️</span>
+        <span>撿貨系統<strong>每小時</strong>抓一次 Shopify 已付款訂單；若在此期間編輯訂單，撿貨系統<strong>不會同步</strong>，請特別注意</span>
+      </li>
+      <li style="display:flex;gap:8px;align-items:flex-start;font-size:13px;color:#3a3000;background:#fffbe6;border-radius:6px;padding:7px 10px;border:1px solid #f0d940">
+        <span style="flex-shrink:0">📊</span>
+        <span>訂單建立完成後，請至
+          <a href="https://docs.google.com/spreadsheets/d/1xedZSlG2JgZu-1eEVLPTpCj8MfMJpxp_-VbXbH3bqbQ/edit?gid=1964423458#gid=1964423458"
+            target="_blank"
+            style="color:#7a4f00;font-weight:700;text-decoration:underline">業務對帳表 ↗</a>
+          填寫：<strong>日期、地區、經銷商名稱、訂單編號、訂單金額、匯款末五碼及金額</strong>
+        </span>
+      </li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="section-title">選擇經銷商</div>
+    <div class="row" style="align-items:flex-end">
+      <div class="col" style="max-width:260px">
+        <label>經銷商名稱</label>
+        <select id="dealer-select" onchange="onDealerSelect()">
+          <option value="">— 選擇經銷商 —</option>
+        </select>
+      </div>
+      <div class="col" style="max-width:120px">
+        <label>進貨折數 %</label>
+        <input type="number" id="discount-rate" value="65" min="1" max="100" oninput="calcOrder()">
+      </div>
+      <div class="col" style="max-width:130px;padding-top:16px">
+        <button class="btn-ghost btn-sm" onclick="toggleNewDealer()" style="width:100%">＋ 新增經銷商</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 經銷商資訊面板 -->
+  <div id="dealer-info-panel" style="display:none" class="info-panel">
+    <!-- 顯示模式 -->
+    <div id="ip-view-mode">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+        <div style="flex:1">
+          <div class="ip-row"><div class="ip-lbl">Email</div><div class="ip-val" id="ip-email"></div></div>
+          <div class="ip-row"><div class="ip-lbl">折數參考</div><div style="flex:1"><div class="ip-val" id="ip-discount"></div><div style="margin-top:3px;font-size:11px;color:var(--accent-dark)">實際折數請以 <a href="https://docs.google.com/spreadsheets/d/1RiJmUwIGkd2bG_ZGfBVnmDEF1_HkQ5uoNKIng8sfqD0/edit?pli=1&gid=106698922#gid=106698922" target="_blank" style="color:var(--accent-dark)">經銷商大表 ↗</a> 為準</div></div></div>
+          <div class="ip-row"><div class="ip-lbl">發票資訊</div><div class="ip-val" id="ip-invoice"></div></div>
+          <div id="ip-note-wrap" style="display:none;background:#fff0f0;border-radius:6px;padding:8px 10px;margin-top:6px;margin-bottom:2px"><div class="ip-row" style="margin:0"><div class="ip-lbl" style="color:#c04a3a">備註</div><div class="ip-val" id="ip-note" style="color:#c04a3a;font-weight:500"></div></div></div>
+        </div>
+        <button class="btn-ghost btn-sm" onclick="startEditDealer()" style="margin-left:12px;flex-shrink:0;border-color:#e8c990;color:var(--accent-dark)">✏️ 編輯</button>
+      </div>
+      <hr style="border:none;border-top:1px solid #e8c990;margin:8px 0">
+      <div class="ip-row" style="align-items:flex-start"><div class="ip-lbl">寄送地址</div>
+        <div style="flex:1">
+          <div class="addr-tabs" id="addr-tabs"></div>
+          <div class="ip-val" id="ip-addr" style="background:white;border-radius:6px;padding:8px 10px;border:1px solid #e8c990"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 編輯模式（預設隱藏） -->
+    <div id="ip-edit-mode" style="display:none">
+      <div style="font-size:11px;font-weight:700;color:var(--accent-dark);letter-spacing:.08em;margin-bottom:10px">✏️ 編輯經銷商資料</div>
+      <div class="row" style="margin-bottom:8px">
+        <div class="col"><label>Email</label><input type="text" id="ie-email" style="background:white"></div>
+        <div class="col" style="max-width:100px"><label>折數 %</label><input type="number" id="ie-discount" style="background:white"></div>
+      </div>
+      <div class="row" style="margin-bottom:8px">
+        <div class="col"><label>發票資訊</label><textarea id="ie-invoice" rows="2" style="width:100%;padding:7px 10px;border:1px solid #e8c990;border-radius:6px;font-family:inherit;font-size:13px;background:white;resize:vertical"></textarea></div>
+        <div class="col"><label>備註</label><textarea id="ie-note" rows="2" style="width:100%;padding:7px 10px;border:1px solid #e8c990;border-radius:6px;font-family:inherit;font-size:13px;background:white;resize:vertical"></textarea></div>
+      </div>
+      <div class="row" style="margin-bottom:10px">
+        <div class="col"><label>地址A</label><textarea id="ie-addrA" rows="2" style="width:100%;padding:7px 10px;border:1px solid #e8c990;border-radius:6px;font-family:inherit;font-size:13px;background:white;resize:vertical"></textarea></div>
+        <div class="col"><label>地址B（選填）</label><textarea id="ie-addrB" rows="2" style="width:100%;padding:7px 10px;border:1px solid #e8c990;border-radius:6px;font-family:inherit;font-size:13px;background:white;resize:vertical"></textarea></div>
+        <div class="col"><label>地址C（選填）</label><textarea id="ie-addrC" rows="2" style="width:100%;padding:7px 10px;border:1px solid #e8c990;border-radius:6px;font-family:inherit;font-size:13px;background:white;resize:vertical"></textarea></div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button onclick="saveEditDealer()" style="background:var(--accent-dark);color:white;padding:7px 16px;border:none;border-radius:6px;font-family:inherit;font-size:13px;font-weight:500;cursor:pointer">儲存</button>
+        <button class="btn-ghost" onclick="cancelEditDealer()">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 新增經銷商 -->
+  <div id="new-dealer-panel" style="display:none" class="card" style="border:1px dashed var(--accent)">
+    <div class="section-title">新增經銷商資料</div>
+    <div class="row" style="margin-bottom:8px">
+      <div class="col"><label>經銷商名稱 *</label><input type="text" id="nd-name" placeholder="必填"></div>
+      <div class="col"><label>Email</label><input type="text" id="nd-email" placeholder=""></div>
+      <div class="col" style="max-width:100px"><label>折數 %</label><input type="number" id="nd-discount" placeholder="65"></div>
+    </div>
+    <div class="row" style="margin-bottom:8px">
+      <div class="col"><label>發票資訊</label><input type="text" id="nd-invoice" placeholder="載具 / 統編 / INVOICE"></div>
+      <div class="col"><label>備註</label><input type="text" id="nd-note" placeholder=""></div>
+    </div>
+    <div class="row" style="margin-bottom:8px">
+      <div class="col"><label>地址A</label><textarea id="nd-addrA" rows="2" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:13px;background:var(--bg);resize:vertical"></textarea></div>
+      <div class="col"><label>地址B（選填）</label><textarea id="nd-addrB" rows="2" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:13px;background:var(--bg);resize:vertical"></textarea></div>
+      <div class="col"><label>地址C（選填）</label><textarea id="nd-addrC" rows="2" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:13px;background:var(--bg);resize:vertical"></textarea></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn-accent" onclick="saveNewDealer()" style="background:var(--accent);color:white;padding:8px 16px">儲存並加入選單</button>
+      <button class="btn-ghost" onclick="document.getElementById('new-dealer-panel').style.display='none'">取消</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div class="section-title" style="margin:0">訂購品項</div>
+      <div style="display:flex;gap:7px">
+        <button class="btn-ghost btn-sm" onclick="addCustomRow()">＋ 手動新增</button>
+        <button class="btn-ghost btn-sm" onclick="clearItems()">清除全部</button>
+      </div>
+    </div>
+    <table class="tbl" id="order-table">
+      <thead><tr>
+        <th style="width:32%">品項</th>
+        <th style="width:14%" class="num">售價（原價）</th>
+        <th style="width:10%" class="center">數量</th>
+        <th style="width:14%" class="num">小計</th>
+        <th style="width:14%" class="num">折數 %</th>
+        <th style="width:12%" class="num">折後小計</th>
+        <th style="width:4%" class="center"></th>
+      </tr></thead>
+      <tbody id="order-tbody"></tbody>
+    </table>
+    <button class="add-row-btn" onclick="addProductRow()">＋ 新增品項</button>
+  </div>
+
+  <div id="gift-notice" style="display:none" class="gift-box"></div>
+
+  <div id="order-summary" style="display:none">
+    <div class="total-row">
+      <div>
+        <div class="lbl">訂單總計（折後進貨價）</div>
+        <div style="font-size:11px;opacity:.55;margin-top:2px" id="total-sub"></div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:12px;opacity:.55;margin-bottom:2px" id="original-total"></div>
+        <div class="val" id="final-total">NT$0</div>
+      </div>
+    </div>
+    <hr class="divider">
+    <div class="copy-header">
+      <div class="section-title" style="margin:0">出貨群組通知訊息</div>
+      <button id="btn-copy-order" class="btn-ghost btn-sm" onclick="copyMsg('order-msg', this)">複製</button>
+    </div>
+    <div class="copy-box" id="order-msg"></div>
+    <hr class="divider">
+    <div class="copy-header">
+      <div class="section-title" style="margin:0">付款確認訊息（傳給經銷商）</div>
+      <button id="btn-copy-payment" class="btn-ghost btn-sm" onclick="copyMsg('payment-msg', this)">複製</button>
+    </div>
+    <div class="copy-box" id="payment-msg"></div>
+  </div>
+</div>
+
+<!-- ════════════════════ TAB B ════════════════════ -->
+<div id="tab-combo" class="tab-content">
+
+  <!-- 品項資料庫（可編輯、可收合） -->
+  <div class="card" style="margin-bottom:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="toggleProductTable()">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span id="product-table-arrow" style="font-size:12px;color:var(--text3);transition:transform .2s">▶</span>
+        <div class="section-title" style="margin:0">品項資料表</div>
+        <span style="font-size:11px;color:var(--text3)">（展開可直接修改售價／成本）</span>
+      </div>
+      <button class="btn-ghost btn-sm" onclick="event.stopPropagation();addProductEntry()">＋ 新增品項</button>
+    </div>
+    <div id="product-table-wrap" style="display:none;margin-top:12px;overflow-x:auto">
+      <table class="tbl" id="product-tbl">
+        <thead><tr>
+          <th style="min-width:160px">品項名稱</th>
+          <th class="num" style="min-width:110px">售價 NT$</th>
+          <th class="num" style="min-width:110px">成本 NT$</th>
+          <th class="center" style="width:36px"></th>
+        </tr></thead>
+        <tbody id="product-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 多組合區 -->
+  <div id="combos-container"></div>
+  <button class="add-row-btn" style="margin-bottom:20px" onclick="addComboGroup()">＋ 新增一組組合</button>
+
+  <!-- 組合總覽（可複製） -->
+  <div id="combo-overview-wrap" style="display:none" class="card">
+    <div class="copy-header">
+      <div>
+        <div class="section-title" style="margin:0">所有組合總覽</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:3px">確認金額後可複製整段文字</div>
+      </div>
+      <button class="btn-ghost btn-sm" onclick="copyMsg('combo-overview-text',this)">複製</button>
+    </div>
+    <div class="copy-box" id="combo-overview-text" style="line-height:2;font-size:14px"></div>
+  </div>
+
+</div>
+
+<script>
+const DEALERS = [{"name":"太陽工作室","email":"sunstudiohsu@gmail.com","discount":"50%","invoice":"抬頭：太陽工作室\n統編：93063325","addrA":"徐子翔 0936373679\n300新竹市東區長春街167巷9號","addrB":"徐子翔 0936373679\n台北市信義區松平路30巷18號","addrC":"7-11成金門市236319\n徐子翔 0936373679\n新北市永和區成功路二段147號149號1樓","note":""},{"name":"周辰雨","email":"emily00411314@gmail.com","discount":"55%","invoice":"載具：/CTDSZO2","addrA":"","addrB":"7-11\n周辰雨\n0928552058\n（汐止）淍安門市\n門市店號：891006","addrC":"","note":""},{"name":"王楚萱","email":"chuhsuanwang@gmail.com","discount":"50%","invoice":"","addrA":"王楚萱 0936119746\n台南市善化區西拉雅大道521巷3弄7號","addrB":"","addrC":"","note":""},{"name":"太一生水能量平衡中心_林冠廷","email":"l3415360@gmail.com","discount":"65%","invoice":"載具：/KA34TLD","addrA":"林冠廷 0989525872\n814高雄市鼓山區裕誠路1509之7號13樓之1","addrB":"","addrC":"","note":""},{"name":"李佳驥","email":"y8911105@hotmail.com","discount":"60%","invoice":"載具：/AJ6BRSW","addrA":"李佳驥 0981771101\n115台北市南港區八德路四段873號","addrB":"","addrC":"","note":""},{"name":"昀津商行","email":"yunjin781021@gmail.com","discount":"55%","invoice":"抬頭：昀津商行\n統編：92275976","addrA":"陳薏曲 0973777844\n彰化縣永靖鄉獨鰲村一村巷141號","addrB":"","addrC":"","note":""},{"name":"心流逸境工作室","email":"j11107jerry@gmail.com","discount":"60%","invoice":"抬頭： 心流逸境工作室\n統編：91530443","addrA":"林佳逸 0916346372\n高雄市三民區忠孝一路491巷37號","addrB":"","addrC":"","note":""},{"name":"左西心創藝有限公司","email":"po@juicyeasy.com","discount":"60%","invoice":"抬頭: 左西心創藝有限公司\n統編: 24270968","addrA":"左西人文 04-22514268\n收件地址: 407 台中市西屯區龍富路五段368號","addrB":"","addrC":"","note":"發票須從綠界補發至個人(業助or業務)信箱後再寄出\n補發通知：gd@juicyeasy.com"},{"name":"點亮光芒股份有限公司_光屋","email":"magic@goldnour.com","discount":"65%","invoice":"抬頭：點亮光芒股份有限公司_光屋\n統編：64893836","addrA":"莊敏 0918841168\n704台南市北區育賢街88號6樓之3","addrB":"","addrC":"","note":""},{"name":"芘恩瑜珈工作坊(陳守庭)","email":"lanana.k@gmail.com","discount":"70%","invoice":"抬頭：芘恩瑜珈工作坊\n統編：38824399","addrA":"陳守庭 0909425862\n台中市西屯區文心路二段578號3樓","addrB":"","addrC":"","note":""},{"name":"Kenny Tong","email":"tong.kenny@gmail.com","discount":"80%","invoice":"請vicky開立INVOICE","addrA":"","addrB":"","addrC":"","note":"運費請設定貨到付款"},{"name":"詹珞晞Helen","email":"innertechhk@gmail.com","discount":"60%","invoice":"請vicky開立INVOICE","addrA":"Helen +85296998908\n香港新界華景山莊13座10樓A室","addrB":"","addrC":"","note":"運費請設定貨到付款"},{"name":"唐鳳仙Daisy","email":"mario.luigi63@gmail.com","discount":"65%","invoice":"請vicky開立INVOICE","addrA":"Daisy Tong +85265928418\n馬鞍山WeGoMall順豐站\n香港新界沙田區馬鞍山保泰街16號WeGoMall地下G09鋪^852FUL^","addrB":"","addrC":"","note":"運費請設定貨到付款"},{"name":"Jerry","email":"petmune@gmail.com","discount":"70%","invoice":"","addrA":"","addrB":"","addrC":"","note":""},{"name":"謝鳳兮","email":"devabhaktitw@gmail.com","discount":"60%","invoice":"","addrA":"","addrB":"","addrC":"","note":""},{"name":"網紅世界","email":"kolsworld123@gmail.com","discount":"70%","invoice":"抬頭：經華國際投資顧問股份有限公司\n統編：13113436","addrA":"網紅世界 02-23970858\n台北市大安區仁愛路4段85號14樓B1室","addrB":"","addrC":"","note":""},{"name":"馬來西亞4U學院 Oneness","email":"crtw@4uinstitute.com","discount":"50%","invoice":"抬頭：香港商全球智慧國際有限公司台灣分公司\n統編：53671127","addrA":"江長謙 0968681328\n台北市萬華區康定路103號15樓之9","addrB":"","addrC":"","note":"需付 \"紙本發票\" 供對方請款\n款項於下個月的10號付款需特別追蹤"},{"name":"陽光智慧科技(股)公司","email":"hungdao.chen@gmail.com","discount":"80%","invoice":"抬頭：陽光智慧科技股份有限公司\n統編：56197315","addrA":"","addrB":"","addrC":"","note":""},{"name":"明泰易學(股)公司","email":"MingTai3655@Gmail.com","discount":"80%","invoice":"抬頭：明泰易學股份有限公司\n統編：90031433","addrA":"明泰易學 0932-691005\n台中市西區英才路510號B棟4樓之7","addrB":"","addrC":"","note":""},{"name":"神驊貿易-Yuri","email":"capsloctrading@gmail.com","discount":"80%","invoice":"抬頭：神驊貿易有限公司\n統編:69314940","addrA":"張婕 0909-854-886\n231 新北市新店區二十張路16巷1弄2號10樓","addrB":"","addrC":"","note":""},{"name":"閱讀樹托嬰(余郁樺)","email":"louisa5566@yahoo.com.tw","discount":"70%","invoice":"抬頭：閱讀樹托嬰中心\n統編：91342316","addrA":"余小魚 0910187137\n新竹縣竹北市嘉豐五路二段119號","addrB":"","addrC":"","note":""},{"name":"加拿大中醫 Daniel","email":"dantcm.ca@gmail.com","discount":"80%","invoice":"","addrA":"","addrB":"","addrC":"","note":""},{"name":"寶石王國","email":"jewelrykingdom168@gmail.com","discount":"80%","invoice":"抬頭：寶石王國有限公司\n統編: 94133051","addrA":"寶石王國-鄭如意 0911393808\n台北市大安區光復南路200巷7號4樓","addrB":"","addrC":"","note":""},{"name":"LILEE DESIGN COMPANY LIMITED","email":"thisisamphi@gmail.com","discount":"70%","invoice":"請vicky開立INVOICE","addrA":"馮文俊 +85253189498\n觀塘成業街27號日昇中心608室","addrB":"","addrC":"","note":"運費請設定貨到付款"},{"name":"朱鳳","email":"981627785@qq.com","discount":"60%","invoice":"若是寄給台灣朋友->開立一般發票\n若是走海外物流->請vicky開立INVOICE","addrA":"很常託台灣朋友幫他帶去大陸","addrB":"","addrC":"","note":"運費請設定貨到付款"},{"name":"屯豐四方有限公司","email":"savage0506@gmail.com","discount":"60%","invoice":"抬頭：屯豐四方有限公司\n統編：94086389","addrA":"賴建勳 0905773726\n台北市北投區中央南路二段34巷16號2樓","addrB":"","addrC":"","note":"須請司機30分鐘前打電話"},{"name":"群康健康事業股份有限公司","email":"smartcare.marketing@gmail.com","discount":"60%","invoice":"抬頭：群康健康事業股份有限公司\n統編：53925641","addrA":"彭伊君 02-28735030\n台北市士林區天玉街15號1樓","addrB":"","addrC":"","note":""},{"name":"大隱塾光","email":"lanubescafe@gmail.com","discount":"70%","invoice":"抬頭：晶凝有限公司\n統編：90580063","addrA":"徐維君 0983578917\n台北市松山區南京東路四段133巷5弄16號1樓","addrB":"","addrC":"","note":""},{"name":"亞太斷食協會","email":"hyla.twn@gmail.com","discount":"80%","invoice":"","addrA":"","addrB":"","addrC":"","note":""},{"name":"香港-靜聽有限公司","email":"wongyeeling818@gmail.com","discount":"65%","invoice":"若是寄給台灣朋友->開立一般發票\n若是走海外物流->請vicky開立INVOICE","addrA":"","addrB":"","addrC":"","note":"運費請設定貨到付款"},{"name":"香港-Divine Victory Health Center","email":"divinevictoryhealthlimited@gmail.com","discount":"60%","invoice":"若是寄給台灣朋友->開立一般發票\n若是走海外物流->請vicky開立INVOICE","addrA":"Takeaki Lam +852-92600368\n香港九龍旺角彌敦道745-747號 金都中心 11樓 A-C室","addrB":"","addrC":"","note":"運費請設定貨到付款"},{"name":"香港-Kalloni","email":"the99cats@gmail.com","discount":"80%","invoice":"請vicky開立INVOICE","addrA":"","addrB":"","addrC":"","note":"運費請設定貨到付款"},{"name":"澳洲-Glory International","email":"situsandra@gmail.com","discount":"60%","invoice":"請vicky開立INVOICE","addrA":"Sandra Situ +61414031314\nTianyi Health International P/L\nU3 6 Champion Street Doncaster East VIC 3109","addrB":"","addrC":"","note":"運費請設定貨到付款"},{"name":"日本-Takako","email":"takako.tamura@aqive.app","discount":"50%","invoice":"若是寄給台灣朋友或是公司取貨->開立一般發票\n若是走海外物流->請vicky開立INVOICE","addrA":"洪嘉璟 HUNG CHIA CHING\n#305 Tamura Building Arakicho 3 Shinjyuku-ku Tokyo Japan\nZip Code 160-0007","addrB":"","addrC":"","note":""},{"name":"中国杭州气机智能科技有限公司","email":"aqive_cn@gmail.com","discount":"50%","invoice":"若是寄給台灣朋友->開立一般發票\n若是走海外物流->請vicky開立INVOICE","addrA":"每次都不一樣，幾乎是寄去香港再轉杭州\n或是Aqive的人帶去(就要開台灣發票)","addrB":"","addrC":"","note":""}];
+
+const PRODUCTS = [
+  {name:'撓境 Qi Vibe',price:14999,cost:1500},
+  {name:'撓氣源寶',price:3300,cost:450},
+  {name:'撓定',price:8499,cost:1000},
+  {name:'撓定Vita-黑',price:8799,cost:1000},
+  {name:'撓定Vita-白',price:8799,cost:1000},
+  {name:'撓定Vita-綠',price:8799,cost:1000},
+  {name:'撓定Vita-紫',price:8799,cost:1000},
+  {name:'撓定白',price:8499,cost:600},
+  {name:'撓定黑',price:8499,cost:600},
+  {name:'撓定灰',price:8499,cost:1500},
+  {name:'盒炁',price:6000,cost:380},
+  {name:'炁環',price:7299,cost:380},
+  {name:'佛',price:2700,cost:590},
+  {name:'觀音',price:2700,cost:590},
+  {name:'十字架',price:2700,cost:590},
+  {name:'乾坤',price:2700,cost:590},
+  {name:'生命之花5',price:2700,cost:590},
+  {name:'生命之花15',price:15000,cost:3000},
+  {name:'晶炁2入組',price:5100,cost:800},
+  {name:'佛佛',price:2700,cost:590},
+  {name:'佛觀音',price:2700,cost:590},
+  {name:'佛乾坤',price:2700,cost:590},
+  {name:'佛十字架',price:2700,cost:590},
+  {name:'觀音觀音',price:2700,cost:590},
+  {name:'觀音乾坤',price:2700,cost:590},
+  {name:'觀音十字架',price:2700,cost:590},
+  {name:'乾坤乾坤',price:2700,cost:590},
+  {name:'乾坤十字架',price:2700,cost:590},
+  {name:'十字架十字架',price:2700,cost:590},
+  {name:'撓晶石',price:1899,cost:67},
+  {name:'天地三寶',price:2700,cost:0},
+  {name:'一加一',price:8799,cost:830},
+  {name:'一加二',price:13299,cost:1210},
+  {name:'一加四',price:22299,cost:1970},
+  {name:'一加炁環',price:9963,cost:830},
+  {name:'水晶金字塔',price:7999,cost:1200},
+  {name:'銅金字塔',price:30000,cost:3000},
+  {name:'金字塔能量組',price:33999,cost:4200},
+  {name:'一加水晶金字塔',price:9699,cost:1650},
+  {name:'覺之花111',price:18000,cost:6300},
+  {name:'覺之花333',price:21000,cost:7350},
+  {name:'覺之花888',price:27000,cost:9450},
+  {name:'覺之花999',price:39000,cost:13650},
+  {name:'333一對',price:36000,cost:12600},
+  {name:'999一對',price:69000,cost:24150},
+  {name:'覺脈環',price:12000,cost:4200},
+  {name:'覺圍',price:900,cost:315},
+  {name:'覺之墊進階-暮藍色',price:12600,cost:4410},
+  {name:'覺之墊進階-奶茶色',price:12600,cost:4410},
+  {name:'覺之墊進階-酪梨色',price:12600,cost:4410},
+  {name:'覺之墊進階-蜜粉色',price:12600,cost:4410},
+  {name:'覺之墊高階-暮藍色',price:15300,cost:5355},
+  {name:'覺之墊高階-奶茶色',price:15300,cost:5355},
+  {name:'覺之墊高階-酪梨色',price:15300,cost:5355},
+  {name:'覺之墊高階-蜜粉色',price:15300,cost:5355},
+  {name:'覺絲',price:9000,cost:3150},
+  {name:'鈦覺智',price:45900,cost:16065},
+  {name:'覺晶',price:4500,cost:1575},
+  {name:'雪花',price:6900,cost:2415},
+  {name:'覺炁衣',price:999,cost:350},
+  {name:'八爪',price:4482,cost:0},
+  {name:'小魚',price:3780,cost:0},
+  {name:'斗杓',price:5850,cost:0},
+  {name:'如意',price:3240,cost:0},
+  {name:'運費-7-11',price:70,cost:70},
+  {name:'運費-新竹物流',price:120,cost:120},
+];
+
+const GIFT_TRIGGERS = ['鈦覺智','覺絲','覺之花111','覺之花333','覺之花888','覺之花999','覺之墊進階','覺之墊高階'];
+const SPECIAL_GIFT = '鈦覺智';
+
+function fmt(n){return 'NT$'+Math.round(n).toLocaleString();}
+
+// ── 自訂經銷商（localStorage 持久保存）──
+const LS_KEY = 'qiji_custom_dealers';
+function loadCustomDealers(){ try{ return JSON.parse(localStorage.getItem(LS_KEY)||'[]'); }catch(e){ return []; } }
+function saveCustomDealers(arr){ localStorage.setItem(LS_KEY, JSON.stringify(arr)); }
+
+// 合併內建 + 自訂：
+// 1. 內建清單順序不變，同名則以自訂資料覆蓋
+// 2. 自訂中全新（不在內建）的名稱，插入到內建清單開頭之後（位置2，緊接在太陽工作室後）
+function allDealers(){
+  const custom = loadCustomDealers();
+  const customMap = Object.fromEntries(custom.map(d=>[d.name, d]));
+  const builtinNames = new Set(DEALERS.map(d=>d.name));
+  // 內建清單（同名用自訂資料覆蓋）
+  const merged = DEALERS.map(d => customMap[d.name] || d);
+  // 完全新的自訂（不在內建清單中的）→ 插入到第1位（index=1，太陽工作室之後）
+  const brandNew = custom.filter(d=>!builtinNames.has(d.name));
+  merged.splice(1, 0, ...brandNew);
+  return merged;
+}
+function findDealer(name){ return allDealers().find(x=>x.name===name); }
+
+// 建立下拉選單
+const dealerSel = document.getElementById('dealer-select');
+function rebuildDealerSelect(selectName=''){
+  while(dealerSel.options.length > 1) dealerSel.remove(1);
+  allDealers().forEach(d=>{
+    const o=document.createElement('option');
+    o.value=d.name; o.textContent=d.name;
+    dealerSel.appendChild(o);
+  });
+  if(selectName) dealerSel.value=selectName;
+}
+rebuildDealerSelect();
+
+let currentAddrs=[];
+let currentAddrIdx=0;
+
+function onDealerSelect(){
+  const name=document.getElementById('dealer-select').value;
+  const d=findDealer(name);
+  const panel=document.getElementById('dealer-info-panel');
+  if(!d||!name){panel.style.display='none';return;}
+  panel.style.display='block';
+  document.getElementById('ip-email').textContent=d.email||'—';
+  document.getElementById('ip-discount').textContent=d.discount||'—';
+  document.getElementById('ip-invoice').textContent=d.invoice||'—';
+  const noteWrap=document.getElementById('ip-note-wrap');
+  if(d.note){noteWrap.style.display='flex';document.getElementById('ip-note').textContent=d.note;}
+  else{noteWrap.style.display='none';}
+  const pct=parseInt(d.discount);
+  if(!isNaN(pct))document.getElementById('discount-rate').value=pct;
+  currentAddrs=[];
+  if(d.addrA)currentAddrs.push({label:'地址A',val:d.addrA});
+  if(d.addrB)currentAddrs.push({label:'地址B',val:d.addrB});
+  if(d.addrC)currentAddrs.push({label:'地址C',val:d.addrC});
+  currentAddrIdx=0;
+  renderAddrTabs();
+  calcOrder();
+}
+
+function renderAddrTabs(){
+  const tabs=document.getElementById('addr-tabs');
+  const addrVal=document.getElementById('ip-addr');
+  if(!currentAddrs.length){tabs.innerHTML='<span style="font-size:12px;color:var(--text3)">（無地址資料）</span>';addrVal.textContent='';return;}
+  tabs.innerHTML=currentAddrs.map((a,i)=>`<div class="addr-tab ${i===currentAddrIdx?'active':''}" onclick="selectAddr(${i})">${a.label}</div>`).join('');
+  addrVal.textContent=currentAddrs[currentAddrIdx].val;
+}
+
+function selectAddr(i){
+  currentAddrIdx=i;
+  renderAddrTabs();
+}
+
+function productOptions(sel=''){
+  return '<option value="">— 選擇品項 —</option>'+
+    PRODUCTS.map(p=>`<option value="${p.name}" data-price="${p.price}" data-cost="${p.cost}" ${sel===p.name?'selected':''}>${p.name}（${fmt(p.price)}）</option>`).join('');
+}
+
+let orderRows=[];
+
+function addProductRow(){
+  const id=Date.now();
+  orderRows.push({id,type:'select'});
+  const tr=document.createElement('tr');
+  tr.id='or-'+id;
+  tr.innerHTML=`<td><select onchange="onProdSel(this,${id})" style="width:100%">${productOptions()}</select></td>
+    <td class="num" id="op-${id}">—</td>
+    <td class="center"><input type="number" id="oq-${id}" value="1" min="1" style="width:58px;text-align:center" oninput="calcOrder()"></td>
+    <td class="num" id="os-${id}">—</td>
+    <td class="center"><input type="number" id="od-${id}" placeholder="同上" style="width:68px;text-align:center" oninput="calcOrder()"></td>
+    <td class="num" id="ofs-${id}">—</td>
+    <td class="center"><button class="btn-danger" onclick="removeRow(${id})">×</button></td>`;
+  document.getElementById('order-tbody').appendChild(tr);
+}
+
+function addCustomRow(){
+  const id=Date.now();
+  orderRows.push({id,type:'custom'});
+  const tr=document.createElement('tr');
+  tr.id='or-'+id;
+  tr.innerHTML=`<td><input type="text" id="ocn-${id}" placeholder="品項名稱" style="width:100%" oninput="calcOrder()"></td>
+    <td><input type="number" id="ocp-${id}" placeholder="售價" style="width:100%;text-align:right" oninput="calcOrder()"></td>
+    <td class="center"><input type="number" id="oq-${id}" value="1" min="1" style="width:58px;text-align:center" oninput="calcOrder()"></td>
+    <td class="num" id="os-${id}">—</td>
+    <td class="center"><input type="number" id="od-${id}" placeholder="同上" style="width:68px;text-align:center" oninput="calcOrder()"></td>
+    <td class="num" id="ofs-${id}">—</td>
+    <td class="center"><button class="btn-danger" onclick="removeRow(${id})">×</button></td>`;
+  document.getElementById('order-tbody').appendChild(tr);
+}
+
+function onProdSel(sel,id){
+  const opt=sel.options[sel.selectedIndex];
+  const price=parseInt(opt.dataset.price)||0;
+  document.getElementById('op-'+id).textContent=price?fmt(price):'—';
+  calcOrder();
+}
+
+function removeRow(id){
+  orderRows=orderRows.filter(r=>r.id!==id);
+  document.getElementById('or-'+id)?.remove();
+  calcOrder();
+}
+
+function clearItems(){
+  document.getElementById('order-tbody').innerHTML='';
+  orderRows=[];
+  document.getElementById('order-summary').style.display='none';
+  document.getElementById('gift-notice').style.display='none';
+}
+
+function calcOrder(){
+  const baseRate=parseFloat(document.getElementById('discount-rate').value)/100||0.65;
+  let totalOrig=0, totalFinal=0;
+  let formulaParts=[];   // 一般品項公式（用於折扣計算）
+  let itemLines=[];      // 出貨通知品項（不含運費）
+  let shippingTotal=0;   // 運費全額加總（不打折）
+  let shippingLines=[];  // 運費品項名稱（顯示在折扣欄位）
+  let giftCount=0;
+  let hasSpecial=false;
+  let hasItems=false;
+
+  orderRows.forEach(({id,type})=>{
+    const row=document.getElementById('or-'+id);
+    if(!row)return;
+    const qty=parseInt(document.getElementById('oq-'+id)?.value)||0;
+    const rowDiscEl=document.getElementById('od-'+id);
+    const rowDisc=rowDiscEl?.value?parseFloat(rowDiscEl.value)/100:baseRate;
+
+    let price=0,name='';
+    if(type==='select'){
+      const sel=row.querySelector('select');
+      const opt=sel?.options[sel.selectedIndex];
+      price=parseInt(opt?.dataset?.price)||0;
+      name=opt?.value||'';
+    } else {
+      price=parseFloat(document.getElementById('ocp-'+id)?.value)||0;
+      name=document.getElementById('ocn-'+id)?.value||'自訂品項';
+    }
+
+    if(price>0&&qty>0){
+      const sub=price*qty;
+      const isShipping=name.startsWith('運費');
+
+      if(isShipping){
+        // 運費：全額、不打折、不進入出貨通知品項列
+        shippingTotal+=sub;
+        shippingLines.push(name+(qty>1?`×${qty}`:''));
+        document.getElementById('os-'+id).textContent=fmt(sub);
+        document.getElementById('ofs-'+id).textContent=fmt(sub); // 顯示全額（不折扣）
+      } else {
+        // 一般品項
+        const finalSub=sub*rowDisc;
+        totalOrig+=sub;
+        totalFinal+=finalSub;
+        hasItems=true;
+        document.getElementById('os-'+id).textContent=fmt(sub);
+        document.getElementById('ofs-'+id).textContent=fmt(finalSub);
+        formulaParts.push(qty===1?`${price.toLocaleString()}`:`${price.toLocaleString()}×${qty}`);
+        itemLines.push(`${name}*${qty}`);
+        if(GIFT_TRIGGERS.some(t=>name.includes(t))){
+          giftCount+=qty;
+          if(name.includes(SPECIAL_GIFT))hasSpecial=true;
+        }
+      }
+    } else {
+      document.getElementById('os-'+id).textContent='—';
+      document.getElementById('ofs-'+id).textContent='—';
+    }
+  });
+
+  if(!hasItems&&shippingTotal===0){
+    document.getElementById('order-summary').style.display='none';
+    document.getElementById('gift-notice').style.display='none';
+    return;
+  }
+
+  const grandTotal=Math.round(totalFinal)+shippingTotal;
+  document.getElementById('original-total').textContent=`原價合計 ${fmt(totalOrig)}${shippingTotal>0?' + 運費 '+fmt(shippingTotal):''}`;
+  document.getElementById('final-total').textContent=fmt(grandTotal);
+  document.getElementById('total-sub').textContent=`折後（整單折數 ${Math.round(baseRate*100)}%）${shippingTotal>0?'，運費全額':''}`;
+  document.getElementById('order-summary').style.display='block';
+
+  const giftEl=document.getElementById('gift-notice');
+  if(giftCount>0){
+    let giftText=`贈品提醒：需附上 隨機覺炁T*${giftCount}`;
+    if(hasSpecial)giftText+=`\n鈦覺智加贈：透明覺智*${giftCount*2}`;
+    giftEl.textContent=giftText;
+    giftEl.style.display='block';
+  } else {
+    giftEl.style.display='none';
+  }
+
+  const dealerName=document.getElementById('dealer-select').value||'經銷商';
+  const addr=currentAddrs.length?currentAddrs[currentAddrIdx].val:'';
+  const finalRounded=Math.round(totalFinal);
+  const currentDealer=findDealer(dealerName);
+  const dealerNote=currentDealer?.note||'';
+
+  // 出貨通知：不顯示運費品項
+  const outboundMsg=`經銷商${dealerName}買斷\n\n${dealerNote?'【備註】\n'+dealerNote+'\n\n':''}〔訂單編號填寫處〕\n${itemLines.join('\n')}${giftCount>0?'\n\n【贈品】\n隨機覺炁T*'+giftCount+(hasSpecial?'\n透明覺智*'+(giftCount*2):''):''}${addr?'\n\n'+addr:''}`;
+
+  // 付款訊息：一般品項先算折扣，運費最後加
+  let paymentFormula='';
+  if(formulaParts.length>0 && shippingTotal>0){
+    // 有品項也有運費
+    paymentFormula=`${formulaParts.join(' + ')} = ${totalOrig.toLocaleString()}\n${totalOrig.toLocaleString()} × ${baseRate.toString().replace(/^0/,'')} + ${shippingTotal.toLocaleString()} = ${grandTotal.toLocaleString()}`;
+  } else if(formulaParts.length>0){
+    // 只有品項
+    paymentFormula=`${formulaParts.join(' + ')} = ${totalOrig.toLocaleString()}\n${totalOrig.toLocaleString()} × ${baseRate.toString().replace(/^0/,'')} = ${finalRounded.toLocaleString()}`;
+  } else {
+    // 只有運費
+    paymentFormula=`運費 ${shippingTotal.toLocaleString()}`;
+  }
+
+  const paymentMsg=`好的～幫您確認金額如下\n\n${paymentFormula}\n\n再請您匯款 $${grandTotal.toLocaleString()}\n\n氣機匯款資訊\n戶名：氣機科技股份有限公司\n808 玉山銀行（三和分行）\n0255-940-016796`;
+
+  document.getElementById('order-msg').textContent=outboundMsg;
+  document.getElementById('payment-msg').textContent=paymentMsg;
+}
+
+// ── 修正後的複製函式：接收 btn 元素直接操作 ──
+function copyMsg(id, btn){
+  const text=document.getElementById(id).textContent;
+
+  function flash(){
+    if(!btn)return;
+    const orig=btn.textContent;
+    btn.textContent='✓ 已複製';
+    btn.classList.add('btn-copy-success');
+    setTimeout(()=>{
+      btn.textContent=orig;
+      btn.classList.remove('btn-copy-success');
+    },2000);
+  }
+
+  if(navigator.clipboard&&window.isSecureContext){
+    navigator.clipboard.writeText(text).then(flash).catch(()=>promptCopy(text,flash));
+  } else {
+    promptCopy(text,flash);
+  }
+}
+
+function promptCopy(text,cb){
+  const ta=document.createElement('textarea');
+  ta.value=text;
+  ta.style.cssText='position:fixed;top:-9999px;left:-9999px;opacity:0';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  try{
+    document.execCommand('copy');
+  } catch(e){
+    // 若 execCommand 也失敗，開新視窗讓使用者手動複製
+    const win=window.open('','_blank','width=600,height=400');
+    if(win){
+      win.document.write(`<html><head><meta charset="UTF-8"><title>複製文字</title></head><body style="font-family:sans-serif;padding:16px"><p style="margin:0 0 8px;font-size:13px;color:#666">請全選後複製（Ctrl+A → Ctrl+C）</p><textarea style="width:100%;height:300px;font-size:13px;padding:8px;border:1px solid #ccc;border-radius:6px" id="t">${text.replace(/</g,'&lt;')}</textarea><script>document.getElementById('t').select();<\/script></body></html>`);
+      win.document.close();
+    }
+  }
+  document.body.removeChild(ta);
+  if(cb)cb();
+}
+
+function startEditDealer(){
+  const name = document.getElementById('dealer-select').value;
+  const d = findDealer(name);
+  if(!d) return;
+  // 填入現有資料
+  document.getElementById('ie-email').value   = d.email||'';
+  document.getElementById('ie-discount').value= parseInt(d.discount)||'';
+  document.getElementById('ie-invoice').value = d.invoice||'';
+  document.getElementById('ie-note').value    = d.note||'';
+  document.getElementById('ie-addrA').value   = d.addrA||'';
+  document.getElementById('ie-addrB').value   = d.addrB||'';
+  document.getElementById('ie-addrC').value   = d.addrC||'';
+  document.getElementById('ip-view-mode').style.display = 'none';
+  document.getElementById('ip-edit-mode').style.display = 'block';
+}
+
+function saveEditDealer(){
+  const name = document.getElementById('dealer-select').value;
+  if(!name) return;
+  const discRaw = document.getElementById('ie-discount').value.trim();
+  const d = {
+    name,
+    email:    document.getElementById('ie-email').value.trim(),
+    discount: discRaw ? discRaw+'%' : '',
+    invoice:  document.getElementById('ie-invoice').value.trim(),
+    note:     document.getElementById('ie-note').value.trim(),
+    addrA:    document.getElementById('ie-addrA').value.trim(),
+    addrB:    document.getElementById('ie-addrB').value.trim(),
+    addrC:    document.getElementById('ie-addrC').value.trim(),
+  };
+  const custom = loadCustomDealers();
+  const idx = custom.findIndex(x=>x.name===name);
+  if(idx>=0) custom[idx]=d; else custom.push(d);
+  saveCustomDealers(custom);
+  rebuildDealerSelect(name);
+  document.getElementById('ip-edit-mode').style.display = 'none';
+  document.getElementById('ip-view-mode').style.display = 'block';
+  onDealerSelect(); // 重新顯示更新後的資料
+}
+
+function cancelEditDealer(){
+  document.getElementById('ip-edit-mode').style.display = 'none';
+  document.getElementById('ip-view-mode').style.display = 'block';
+}
+
+function toggleNewDealer(){
+  const p=document.getElementById('new-dealer-panel');
+  p.style.display=p.style.display==='none'?'block':'none';
+}
+
+function saveNewDealer(){
+  const name=document.getElementById('nd-name').value.trim();
+  if(!name){alert('請輸入經銷商名稱');return;}
+  const discRaw=document.getElementById('nd-discount').value.trim();
+  const d={
+    name,
+    email:document.getElementById('nd-email').value.trim(),
+    discount:discRaw ? discRaw+'%' : '',
+    invoice:document.getElementById('nd-invoice').value.trim(),
+    addrA:document.getElementById('nd-addrA').value.trim(),
+    addrB:document.getElementById('nd-addrB').value.trim(),
+    addrC:document.getElementById('nd-addrC').value.trim(),
+    note:document.getElementById('nd-note').value.trim(),
+  };
+  // 儲存到 localStorage（同名則更新）
+  const custom=loadCustomDealers();
+  const idx=custom.findIndex(x=>x.name===name);
+  if(idx>=0) custom[idx]=d; else custom.push(d);
+  saveCustomDealers(custom);
+  // 重建下拉並自動選取
+  rebuildDealerSelect(name);
+  onDealerSelect();
+  document.getElementById('new-dealer-panel').style.display='none';
+  ['nd-name','nd-email','nd-discount','nd-invoice','nd-addrA','nd-addrB','nd-addrC','nd-note'].forEach(id=>document.getElementById(id).value='');
+  alert(`「${name}」已儲存，重新整理頁面後資料仍會保留。`);
+}
+
+function toggleProductTable(){
+  const wrap = document.getElementById('product-table-wrap');
+  const arrow = document.getElementById('product-table-arrow');
+  const open = wrap.style.display === 'none';
+  wrap.style.display = open ? 'block' : 'none';
+  arrow.textContent = open ? '▼' : '▶';
+}
+
+// ══════════════════════════════════════════
+// TAB B — 優惠組合試算
+// ══════════════════════════════════════════
+
+// 可編輯的品項資料（複製自 PRODUCTS，可新增/修改）
+let editableProducts = PRODUCTS.map(p=>({...p}));
+
+function renderProductTable(){
+  document.getElementById('product-tbody').innerHTML = editableProducts.map((p,i)=>`
+    <tr data-idx="${i}">
+      <td><input type="text" value="${p.name.replace(/"/g,'&quot;')}" oninput="editProduct(${i},'name',this.value)" style="width:100%"></td>
+      <td><input type="number" value="${p.price}" oninput="editProduct(${i},'price',this.value)" style="width:100%;text-align:right"></td>
+      <td><input type="number" value="${p.cost}" oninput="editProduct(${i},'cost',this.value)" style="width:100%;text-align:right"></td>
+      <td class="center"><button class="btn-danger" onclick="deleteProduct(${i})">×</button></td>
+    </tr>`).join('');
+  refreshAllComboSelects();
+}
+
+function editProduct(i, field, val){
+  editableProducts[i][field] = field==='name' ? val : (parseFloat(val)||0);
+  refreshAllComboSelects();
+  recalcAllCombos();
+}
+
+function deleteProduct(i){
+  editableProducts.splice(i,1);
+  renderProductTable();
+  recalcAllCombos();
+}
+
+function addProductEntry(){
+  editableProducts.unshift({name:'新品項',price:0,cost:0});
+  // 因為索引全部往後移，需要重新 render
+  renderProductTable();
+  // 展開表格並滾到最上方的新格子
+  const wrap = document.getElementById('product-table-wrap');
+  const arrow = document.getElementById('product-table-arrow');
+  if(wrap.style.display === 'none'){
+    wrap.style.display = 'block';
+    arrow.textContent = '▼';
+  }
+  // focus 第一列的品名欄
+  const firstInput = document.querySelector('#product-tbody tr:first-child td:first-child input');
+  if(firstInput){ firstInput.focus(); firstInput.select(); }
+}
+
+function productOptionsFromEditable(selName=''){
+  return '<option value="">— 選擇品項 —</option>'+
+    editableProducts.map(p=>`<option value="${p.name}" ${selName===p.name?'selected':''}>${p.name}（${fmt(p.price)}）</option>`).join('');
+}
+
+function refreshAllComboSelects(){
+  comboGroups.forEach(g=>{
+    g.items.forEach(item=>{
+      const sel = document.getElementById('cs-'+item.id);
+      if(!sel) return;
+      const curVal = item.selectedName||'';
+      sel.innerHTML = productOptionsFromEditable(curVal);
+    });
+  });
+}
+
+// ── 多組合管理 ──
+let comboGroups = []; // [{gid, name, items:[{id,type,selectedName,qty}], price, disc}]
+let gidCounter = 0;
+
+function addComboGroup(){
+  const gid = ++gidCounter;
+  comboGroups.push({gid, name:'組合 '+gid, items:[], price:'', disc:''});
+  renderAllComboGroups();
+  // 自動加一個品項
+  addItemToGroup(gid);
+}
+
+function removeComboGroup(gid){
+  comboGroups = comboGroups.filter(g=>g.gid!==gid);
+  renderAllComboGroups();
+  updateComboOverview();
+}
+
+function addItemToGroup(gid){
+  const g = comboGroups.find(g=>g.gid===gid);
+  if(!g) return;
+  g.items.push({id: Date.now()+Math.random(), type:'select', selectedName:'', qty:1});
+  renderAllComboGroups();
+}
+
+function removeItemFromGroup(gid, itemId){
+  const g = comboGroups.find(g=>g.gid===gid);
+  if(!g) return;
+  g.items = g.items.filter(it=>it.id!==itemId);
+  renderAllComboGroups();
+  calcComboGroup(gid);
+}
+
+function renderAllComboGroups(){
+  const container = document.getElementById('combos-container');
+  if(!comboGroups.length){container.innerHTML='';return;}
+  container.innerHTML = comboGroups.map(g=>renderComboGroupHTML(g)).join('');
+  // Restore select values
+  comboGroups.forEach(g=>{
+    g.items.forEach(item=>{
+      if(item.type==='select'){
+        const sel=document.getElementById('cs-'+item.id);
+        if(sel&&item.selectedName) sel.value=item.selectedName;
+      }
+    });
+    calcComboGroup(g.gid);
+  });
+}
+
+function renderComboGroupHTML(g){
+  const letters='ABCDEFGHIJ';
+  const PLUS=`<span style="font-size:18px;color:var(--text3);margin:0 6px;align-self:center">＋</span>`;
+
+  const itemCards = g.items.map((item,i)=>{
+    const letter = letters[i]||String(i+1);
+    return `
+    <div style="display:flex;align-items:center">
+      ${i>0?PLUS:''}
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;min-width:155px;max-width:210px;flex:1;position:relative">
+        <div style="position:absolute;top:-9px;left:10px;background:var(--text);color:white;border-radius:12px;padding:1px 8px;font-size:10px;font-weight:700">${letter}</div>
+        <select id="cs-${item.id}" onchange="onGroupItemSel(${g.gid},${item.id},this)"
+          style="width:100%;margin-top:6px;margin-bottom:6px;font-size:12px">
+          ${productOptionsFromEditable(item.selectedName)}
+        </select>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:5px">
+            <span style="font-size:11px;color:var(--text2)">數量</span>
+            <input type="number" id="cq-${item.id}" value="${item.qty}" min="1"
+              style="width:46px;text-align:center;font-size:12px"
+              oninput="onGroupItemQty(${g.gid},${item.id},this.value)">
+          </div>
+          <button class="btn-danger" onclick="removeItemFromGroup(${g.gid},${item.id})">×</button>
+        </div>
+        <div id="cv-${item.id}" style="margin-top:6px;font-size:11px;color:var(--text3);border-top:1px solid var(--border);padding-top:5px">—</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `
+  <div class="card" style="margin-bottom:16px;border:1px solid var(--border)" id="cg-${g.gid}">
+    <!-- 組合標題列 -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="text" value="${g.name}" oninput="renameGroup(${g.gid},this.value)"
+          style="font-size:14px;font-weight:600;border:none;background:transparent;padding:2px 4px;width:140px;color:var(--text);border-bottom:1px dashed var(--border)">
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn-ghost btn-sm" onclick="addItemToGroup(${g.gid})">＋ 新增品項</button>
+        <button class="btn-danger" style="font-size:13px;padding:4px 8px;border:1px solid var(--border);border-radius:6px" onclick="removeComboGroup(${g.gid})">刪除組合</button>
+      </div>
+    </div>
+
+    <!-- A+B+C 品項卡片 -->
+    <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:stretch;margin-bottom:12px">
+      ${itemCards}
+    </div>
+
+    <!-- 總覽橫幅：A+B = $金額 -->
+    <div id="cg-summary-${g.gid}" style="display:none;background:var(--surface2);border-radius:8px;padding:9px 14px;margin-bottom:12px;font-size:13px;color:var(--text);font-weight:500"></div>
+
+    <!-- 定價列 -->
+    <div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+      <div>
+        <label>打折 %</label>
+        <input type="number" id="gdisc-${g.gid}" value="${g.disc}" placeholder="例：90" min="1" max="100" style="width:90px"
+          oninput="onGroupDiscInput(${g.gid},this.value)">
+      </div>
+      <div style="font-size:18px;color:var(--text3);padding-bottom:6px">→</div>
+      <div>
+        <label>組合售價 NT$</label>
+        <input type="number" id="gprice-${g.gid}" value="${g.price}" placeholder="0" style="width:130px"
+          oninput="onGroupPriceInput(${g.gid},this.value)">
+      </div>
+    </div>
+
+    <!-- 369 建議 -->
+    <div id="g369-${g.gid}" style="display:none;background:var(--accent-light);border:1px solid #e8c990;border-radius:8px;padding:10px 13px;margin-bottom:12px">
+      <div style="font-size:11px;font-weight:700;color:var(--accent-dark);margin-bottom:6px">✦ 369 建議售價</div>
+      <div id="g369info-${g.gid}" style="font-size:11px;color:var(--accent-dark);margin-bottom:8px"></div>
+      <div id="g369list-${g.gid}" style="display:flex;gap:7px;flex-wrap:wrap"></div>
+    </div>
+
+    <!-- 毛利結果 -->
+    <div id="gresult-${g.gid}" style="display:none">
+
+      <!-- 毛利對比表格 — 橫向對比 5折 vs 95折 -->
+      <div style="background:var(--surface2);border-radius:10px;overflow:hidden;border:1px solid var(--border)">
+
+        <!-- 標題列 -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;font-size:11px;font-weight:700;letter-spacing:.06em;color:white">
+          <div style="background:var(--text);padding:9px 14px">項目</div>
+          <div style="background:var(--green);padding:9px 14px;text-align:right">5折進貨（氣機最少收）</div>
+          <div style="background:var(--accent-dark);padding:9px 14px;text-align:right">95折進貨（氣機最多收）</div>
+        </div>
+
+        <!-- 氣機實收 -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid var(--border)">
+          <div style="padding:9px 14px;font-size:12px;color:var(--text2)">氣機實收</div>
+          <div style="padding:9px 14px;text-align:right;font-size:13px;font-weight:600" id="gr5-recv-${g.gid}">—</div>
+          <div style="padding:9px 14px;text-align:right;font-size:13px;font-weight:600" id="gr95-recv-${g.gid}">—</div>
+        </div>
+
+        <!-- 直接成本 -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid var(--border);background:#fafaf8">
+          <div style="padding:9px 14px;font-size:12px;color:var(--text2)">－ 直接成本</div>
+          <div style="padding:9px 14px;text-align:right;font-size:13px;color:var(--red)" id="gr5-cost-${g.gid}">—</div>
+          <div style="padding:9px 14px;text-align:right;font-size:13px;color:var(--red)" id="gr95-cost-${g.gid}">—</div>
+        </div>
+
+        <!-- 毛利金額 -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid var(--border)">
+          <div style="padding:9px 14px;font-size:12px;font-weight:700">＝ 毛利</div>
+          <div style="padding:9px 14px;text-align:right;font-size:14px;font-weight:700;color:var(--green)" id="gr5-profit-${g.gid}">—</div>
+          <div style="padding:9px 14px;text-align:right;font-size:14px;font-weight:700;color:var(--accent-dark)" id="gr95-profit-${g.gid}">—</div>
+        </div>
+
+        <!-- 毛利率 + 進度條 -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;background:var(--surface)">
+          <div style="padding:10px 14px;font-size:12px;color:var(--text2)">毛利率</div>
+          <div style="padding:10px 14px">
+            <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end">
+              <div style="flex:1;max-width:80px"><div class="margin-bar"><div class="margin-fill" id="gbar5-${g.gid}" style="width:0%"></div></div></div>
+              <span style="font-size:18px;font-weight:800;min-width:52px;text-align:right" id="gm5-${g.gid}">—</span>
+              <span id="gb5-${g.gid}"></span>
+            </div>
+          </div>
+          <div style="padding:10px 14px">
+            <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end">
+              <div style="flex:1;max-width:80px"><div class="margin-bar"><div class="margin-fill" id="gbar95-${g.gid}" style="width:0%"></div></div></div>
+              <span style="font-size:18px;font-weight:800;min-width:52px;text-align:right" id="gm95-${g.gid}">—</span>
+              <span id="gb95-${g.gid}"></span>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- end margin table -->
+    </div><!-- end gresult -->
+  </div>`;/* end card */
+}
+
+function renameGroup(gid, val){
+  const g=comboGroups.find(g=>g.gid===gid);
+  if(g) g.name=val;
+}
+
+function onGroupItemSel(gid, itemId, sel){
+  const g=comboGroups.find(g=>g.gid===gid);
+  if(!g) return;
+  const item=g.items.find(it=>it.id===itemId);
+  if(item) item.selectedName=sel.value;
+  calcComboGroup(gid);
+}
+
+function onGroupItemQty(gid, itemId, val){
+  const g=comboGroups.find(g=>g.gid===gid);
+  if(!g) return;
+  const item=g.items.find(it=>it.id===itemId);
+  if(item) item.qty=parseInt(val)||1;
+  calcComboGroup(gid);
+}
+
+function onGroupDiscInput(gid, val){
+  const g=comboGroups.find(g=>g.gid===gid);
+  if(!g) return;
+  g.disc=val;
+  const{totalOrig}=getGroupData(gid);
+  const disc=parseFloat(val)/100;
+  if(disc>0&&totalOrig>0){
+    g.price=Math.round(totalOrig*disc);
+    const el=document.getElementById('gprice-'+gid);
+    if(el) el.value=g.price;
+  }
+  calcComboGroup(gid);
+}
+
+function onGroupPriceInput(gid, val){
+  const g=comboGroups.find(g=>g.gid===gid);
+  if(!g) return;
+  g.price=val;
+  const{totalOrig}=getGroupData(gid);
+  const price=parseFloat(val)||0;
+  if(totalOrig>0&&price>0){
+    g.disc=(price/totalOrig*100).toFixed(1);
+    const el=document.getElementById('gdisc-'+gid);
+    if(el) el.value=g.disc;
+  }
+  calcComboGroup(gid);
+}
+
+function setGroup369(gid, n){
+  const g=comboGroups.find(g=>g.gid===gid);
+  if(!g) return;
+  g.price=n;
+  const el=document.getElementById('gprice-'+gid);
+  if(el) el.value=n;
+  onGroupPriceInput(gid, n);
+}
+
+function getGroupData(gid){
+  const g=comboGroups.find(g=>g.gid===gid);
+  if(!g) return {totalOrig:0,totalCost:0,items:[]};
+  let totalOrig=0,totalCost=0;
+  const items=[];
+  g.items.forEach(item=>{
+    const p=editableProducts.find(x=>x.name===item.selectedName);
+    const qty=item.qty||1;
+    const price=p?p.price:0, cost=p?p.cost:0, name=item.selectedName||'';
+    const cvEl=document.getElementById('cv-'+item.id);
+    if(cvEl) cvEl.textContent=price?`售 ${fmt(price*qty)}  成 ${fmt(cost*qty)}`:'—';
+    if(price>0&&name){totalOrig+=price*qty;totalCost+=cost*qty;items.push({name,price,cost,qty});}
+  });
+  return{totalOrig,totalCost,items};
+}
+
+function calcComboGroup(gid){
+  const g=comboGroups.find(g=>g.gid===gid);
+  if(!g) return;
+  const{totalOrig,totalCost,items}=getGroupData(gid);
+  const letters='ABCDEFGHIJ';
+
+  // 總覽橫幅：撓氣源寶×3 ＋ 盒炁×3 = NT$32,999
+  const sumEl=document.getElementById('cg-summary-'+gid);
+  if(sumEl){
+    if(items.length){
+      const price=parseFloat(g.price)||0;
+      const parts=items.map(it=>`<span style="font-weight:700;font-size:15px">${it.name}${it.qty>1?`×${it.qty}`:''}</span>`);
+      const joined=parts.join('<span style="color:var(--text3);font-size:15px;margin:0 5px">＋</span>');
+      sumEl.style.display='block';
+      sumEl.innerHTML=`<div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;padding:6px 2px">
+        ${joined}
+        <span style="color:var(--text3);font-size:15px;margin:0 5px">=</span>
+        ${price>0
+          ?`<span style="font-size:20px;font-weight:800;color:var(--accent-dark)">${fmt(price)}</span>
+            <span style="font-size:11px;color:var(--text3);margin-left:8px">原價合計 ${fmt(totalOrig)}</span>`
+          :`<span style="font-size:12px;color:var(--text3)">請輸入售價 ↓</span>`}
+      </div>`;
+    } else {
+      sumEl.style.display='none';
+    }
+  }
+
+  const comboPrice=parseFloat(g.price)||0;
+  const resultEl=document.getElementById('gresult-'+gid);
+  if(!resultEl) return;
+
+  if(!items.length||comboPrice===0){
+    resultEl.style.display='none';
+    updateGroup369(gid, comboPrice, totalOrig);
+    return;
+  }
+  resultEl.style.display='block';
+
+  // 正確毛利公式：
+  // 氣機實收 = 組合售價 × 折數（5折 or 95折）← 這是氣機收到的錢
+  // 毛利 = 氣機實收 - 直接成本
+  const recv5  = comboPrice * 0.5;
+  const recv95 = comboPrice * 0.95;
+  const profit5  = recv5  - totalCost;
+  const profit95 = recv95 - totalCost;
+  const margin5  = recv5>0  ? profit5/recv5*100   : 0;
+  const margin95 = recv95>0 ? profit95/recv95*100 : 0;
+
+  function set(id,v){const el=document.getElementById(id);if(el)el.textContent=v;}
+  function setH(id,v){const el=document.getElementById(id);if(el)el.innerHTML=v;}
+  function mkBadge(m){
+    if(m>=40)return '<span class="badge badge-green">健康</span>';
+    if(m>=20)return '<span class="badge badge-amber">偏低</span>';
+    return '<span class="badge badge-red">過低</span>';
+  }
+
+  set(`gm5-${gid}`,  margin5.toFixed(1)+'%');
+  setH(`gb5-${gid}`, mkBadge(margin5));
+  set(`gr5-recv-${gid}`,   fmt(recv5));
+  set(`gr5-cost-${gid}`,   '－'+fmt(totalCost));
+  set(`gr5-profit-${gid}`, fmt(profit5));
+
+  set(`gm95-${gid}`,  margin95.toFixed(1)+'%');
+  setH(`gb95-${gid}`, mkBadge(margin95));
+  set(`gr95-recv-${gid}`,   fmt(recv95));
+  set(`gr95-cost-${gid}`,   '－'+fmt(totalCost));
+  set(`gr95-profit-${gid}`, fmt(profit95));
+
+  const bar5=document.getElementById('gbar5-'+gid);
+  if(bar5){bar5.style.width=Math.min(100,Math.max(0,margin5))+'%';bar5.className='margin-fill '+(margin5>=40?'margin-good':margin5>=20?'margin-mid':'margin-low');}
+  const bar95=document.getElementById('gbar95-'+gid);
+  if(bar95){bar95.style.width=Math.min(100,Math.max(0,margin95))+'%';bar95.className='margin-fill '+(margin95>=40?'margin-good':margin95>=20?'margin-mid':'margin-low');}
+
+  updateGroup369(gid, comboPrice, totalOrig);
+  updateComboOverview();
+}
+
+function recalcAllCombos(){
+  comboGroups.forEach(g=>calcComboGroup(g.gid));
+}
+
+function updateComboOverview(){
+  const wrap=document.getElementById('combo-overview-wrap');
+  const textEl=document.getElementById('combo-overview-text');
+  // 只顯示有售價的組合
+  const ready=comboGroups.filter(g=>parseFloat(g.price)>0&&g.items.length);
+  if(!ready.length){wrap.style.display='none';return;}
+  wrap.style.display='block';
+  textEl.textContent=ready.map(g=>{
+    const{items}=getGroupData(g.gid);
+    const parts=items.map(it=>it.name+(it.qty>1?'×'+it.qty:'')).join('+');
+    return `${g.name}　${parts} $${Math.round(g.price).toLocaleString()}`;
+  }).join('\n');
+}
+
+// 369 工具
+function digitSum(n){let s=Math.abs(Math.round(n)),d=0;while(s>0){d+=s%10;s=Math.floor(s/10);}return d;}
+function is369(n){let d=digitSum(n);while(d>9)d=digitSum(d);return d===3||d===6||d===9;}
+function find369Near(base,count=8){
+  const results=[];
+  for(let delta=0;results.length<count&&delta<=5000;delta++){
+    if(delta===0){if(base>0&&is369(base))results.push(base);}
+    else{const up=base+delta,dn=base-delta;if(up>0&&is369(up))results.push(up);if(dn>0&&is369(dn)&&dn!==up)results.push(dn);}
+  }
+  return results.sort((a,b)=>a-b);
+}
+
+function updateGroup369(gid, comboPrice, totalOrig){
+  const wrap=document.getElementById('g369-'+gid);
+  if(!wrap) return;
+  if(!comboPrice||comboPrice<=0){wrap.style.display='none';return;}
+  const near=find369Near(comboPrice,8);
+  if(!near.length){wrap.style.display='none';return;}
+  wrap.style.display='block';
+  const infoEl=document.getElementById('g369info-'+gid);
+  const listEl=document.getElementById('g369list-'+gid);
+  if(infoEl) infoEl.textContent=`目前 ${fmt(comboPrice)}（原價 ${totalOrig>0?(comboPrice/totalOrig*100).toFixed(1)+'%':'—'}），以下為附近 369 建議：`;
+  if(listEl) listEl.innerHTML=near.map(n=>{
+    const isThis=n===Math.round(comboPrice);
+    const pct=totalOrig>0?' '+(n/totalOrig*100).toFixed(1)+'%':'';
+    return `<div onclick="setGroup369(${gid},${n})" style="padding:6px 11px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;
+      border:2px solid ${isThis?'var(--accent)':'var(--border)'};
+      background:${isThis?'var(--accent-light)':'var(--surface)'};
+      color:${isThis?'var(--accent-dark)':'var(--text)'}">
+      ${fmt(n)}<span style="font-size:10px;font-weight:400;color:var(--text3);margin-left:3px">${pct}</span>${isThis?'<span class="tag369" style="margin-left:4px">369✓</span>':''}
+    </div>`;
+  }).join('');
+}
+
+function switchTab(tab){
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',(tab==='order'&&i===0)||(tab==='combo'&&i===1)));
+  document.getElementById('tab-order').classList.toggle('active',tab==='order');
+  document.getElementById('tab-combo').classList.toggle('active',tab==='combo');
+}
+
+addProductRow();
+renderProductTable();
+addComboGroup();
+</script>
+</body>
+</html>
