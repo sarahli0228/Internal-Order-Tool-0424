@@ -522,10 +522,10 @@ function clearItems(){
 function calcOrder(){
   const baseRate=parseFloat(document.getElementById('discount-rate').value)/100||0.65;
   let totalOrig=0, totalFinal=0;
-  let formulaParts=[];   // 一般品項公式（用於折扣計算）
-  let itemLines=[];      // 出貨通知品項（不含運費）
-  let shippingTotal=0;   // 運費全額加總（不打折）
-  let shippingLines=[];  // 運費品項名稱（顯示在折扣欄位）
+  let discGroups={};         // { '0.7': [{price,qty},...], '0.4': [...] }
+  let itemLines=[];
+  let shippingTotal=0;
+  let shippingLines=[];
   let giftCount=0;
   let hasSpecial=false;
   let hasItems=false;
@@ -553,20 +553,21 @@ function calcOrder(){
       const isShipping=name.startsWith('運費');
 
       if(isShipping){
-        // 運費：全額、不打折、不進入出貨通知品項列
         shippingTotal+=sub;
         shippingLines.push(name+(qty>1?`×${qty}`:''));
         document.getElementById('os-'+id).textContent=fmt(sub);
-        document.getElementById('ofs-'+id).textContent=fmt(sub); // 顯示全額（不折扣）
+        document.getElementById('ofs-'+id).textContent=fmt(sub);
       } else {
-        // 一般品項
         const finalSub=sub*rowDisc;
         totalOrig+=sub;
         totalFinal+=finalSub;
         hasItems=true;
         document.getElementById('os-'+id).textContent=fmt(sub);
         document.getElementById('ofs-'+id).textContent=fmt(finalSub);
-        formulaParts.push(qty===1?`${price.toLocaleString()}`:`${price.toLocaleString()}×${qty}`);
+        // 依折數分組
+        const key=rowDisc.toString();
+        if(!discGroups[key]) discGroups[key]=[];
+        discGroups[key].push({price,qty});
         itemLines.push(`${name}*${qty}`);
         if(GIFT_TRIGGERS.some(t=>name.includes(t))){
           giftCount+=qty;
@@ -610,16 +611,27 @@ function calcOrder(){
   // 出貨通知：不顯示運費品項
   const outboundMsg=`經銷商${dealerName}買斷\n\n${dealerNote?'【備註】\n'+dealerNote+'\n\n':''}〔訂單編號填寫處〕\n${itemLines.join('\n')}${giftCount>0?'\n\n【贈品】\n隨機覺炁T*'+giftCount+(hasSpecial?'\n透明覺智*'+(giftCount*2):''):''}${addr?'\n\n'+addr:''}`;
 
-  // 付款訊息：一般品項先算折扣，運費最後加
+  // 付款訊息：單行公式 price×rate + price×rate = total
+  let formulaTerms=[];
+  Object.entries(discGroups).forEach(([rateStr, items])=>{
+    const rate=parseFloat(rateStr);
+    items.forEach(it=>{
+      const rateDisplay=rate.toString().replace(/^0/,'');
+      formulaTerms.push(it.qty===1
+        ? `${it.price.toLocaleString()}×${rateDisplay}`
+        : `${it.price.toLocaleString()}×${it.qty}×${rateDisplay}`);
+    });
+  });
+
   let paymentFormula='';
-  if(formulaParts.length>0 && shippingTotal>0){
-    // 有品項也有運費
-    paymentFormula=`${formulaParts.join(' + ')} = ${totalOrig.toLocaleString()}\n${totalOrig.toLocaleString()} × ${baseRate.toString().replace(/^0/,'')} + ${shippingTotal.toLocaleString()} = ${grandTotal.toLocaleString()}`;
-  } else if(formulaParts.length>0){
-    // 只有品項
-    paymentFormula=`${formulaParts.join(' + ')} = ${totalOrig.toLocaleString()}\n${totalOrig.toLocaleString()} × ${baseRate.toString().replace(/^0/,'')} = ${finalRounded.toLocaleString()}`;
-  } else {
-    // 只有運費
+  if(formulaTerms.length>0){
+    const exactTotal=totalFinal+(shippingTotal||0); // 含小數
+    const formulaStr=formulaTerms.join('+');
+    const exactDisplay=shippingTotal>0
+      ? `${formulaStr}+${shippingTotal.toLocaleString()}=${exactTotal}`
+      : `${formulaStr}=${exactTotal}`;
+    paymentFormula=exactDisplay;
+  } else if(shippingTotal>0){
     paymentFormula=`運費 ${shippingTotal.toLocaleString()}`;
   }
 
@@ -890,6 +902,12 @@ function renderComboGroupHTML(g){
               style="width:46px;text-align:center;font-size:12px"
               oninput="onGroupItemQty(${g.gid},${item.id},this.value)">
           </div>
+          <label style="display:flex;align-items:center;gap:3px;font-size:11px;color:var(--text2);cursor:pointer">
+            <input type="checkbox" id="cgift-${item.id}" ${item.isGift?'checked':''}
+              onchange="onGroupItemGift(${g.gid},${item.id},this.checked)"
+              style="cursor:pointer">
+            贈品
+          </label>
           <button class="btn-danger" onclick="removeItemFromGroup(${g.gid},${item.id})">×</button>
         </div>
         <div id="cv-${item.id}" style="margin-top:6px;font-size:11px;color:var(--text3);border-top:1px solid var(--border);padding-top:5px">—</div>
@@ -944,57 +962,65 @@ function renderComboGroupHTML(g){
     <!-- 毛利結果 -->
     <div id="gresult-${g.gid}" style="display:none">
 
-      <!-- 毛利對比表格 — 橫向對比 5折 vs 95折 -->
-      <div style="background:var(--surface2);border-radius:10px;overflow:hidden;border:1px solid var(--border)">
+      <!-- 毛利對比表格 -->
+      <div style="background:var(--surface2);border-radius:10px;overflow:hidden;border:1px solid var(--border);overflow-x:auto">
+        <div style="min-width:700px">
 
         <!-- 標題列 -->
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;font-size:11px;font-weight:700;letter-spacing:.06em;color:white">
-          <div style="background:var(--text);padding:9px 14px">項目</div>
-          <div style="background:var(--green);padding:9px 14px;text-align:right">5折進貨（氣機最少收）</div>
-          <div style="background:var(--accent-dark);padding:9px 14px;text-align:right">95折進貨（氣機最多收）</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr;font-size:10px;font-weight:700;letter-spacing:.04em;color:white">
+          <div style="background:var(--text);padding:9px 10px">項目</div>
+          <div style="background:#4a7a8a;padding:9px 10px;text-align:right">原價</div>
+          <div style="background:#2d6e4e;padding:9px 10px;text-align:right">5折進貨</div>
+          <div style="background:#4a8a60;padding:9px 10px;text-align:right">55折進貨</div>
+          <div style="background:#6a9e76;padding:9px 10px;text-align:right">6折進貨</div>
+          <div style="background:var(--accent-dark);padding:9px 10px;text-align:right">95折進貨</div>
         </div>
 
         <!-- 氣機實收 -->
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid var(--border)">
-          <div style="padding:9px 14px;font-size:12px;color:var(--text2)">氣機實收</div>
-          <div style="padding:9px 14px;text-align:right;font-size:13px;font-weight:600" id="gr5-recv-${g.gid}">—</div>
-          <div style="padding:9px 14px;text-align:right;font-size:13px;font-weight:600" id="gr95-recv-${g.gid}">—</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr;border-bottom:1px solid var(--border)">
+          <div style="padding:8px 10px;font-size:12px;color:var(--text2)">氣機實收</div>
+          <div style="padding:8px 10px;text-align:right;font-size:12px;font-weight:600" id="grf-recv-${g.gid}">—</div>
+          <div style="padding:8px 10px;text-align:right;font-size:12px;font-weight:600" id="gr5-recv-${g.gid}">—</div>
+          <div style="padding:8px 10px;text-align:right;font-size:12px;font-weight:600" id="gr55-recv-${g.gid}">—</div>
+          <div style="padding:8px 10px;text-align:right;font-size:12px;font-weight:600" id="gr6-recv-${g.gid}">—</div>
+          <div style="padding:8px 10px;text-align:right;font-size:12px;font-weight:600" id="gr95-recv-${g.gid}">—</div>
         </div>
 
         <!-- 直接成本 -->
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid var(--border);background:#fafaf8">
-          <div style="padding:9px 14px;font-size:12px;color:var(--text2)">－ 直接成本</div>
-          <div style="padding:9px 14px;text-align:right;font-size:13px;color:var(--red)" id="gr5-cost-${g.gid}">—</div>
-          <div style="padding:9px 14px;text-align:right;font-size:13px;color:var(--red)" id="gr95-cost-${g.gid}">—</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr;border-bottom:1px solid var(--border);background:#fafaf8">
+          <div style="padding:8px 10px;font-size:12px;color:var(--text2)">－ 直接成本</div>
+          <div style="padding:8px 10px;text-align:right;font-size:12px;color:var(--red)" id="grf-cost-${g.gid}">—</div>
+          <div style="padding:8px 10px;text-align:right;font-size:12px;color:var(--red)" id="gr5-cost-${g.gid}">—</div>
+          <div style="padding:8px 10px;text-align:right;font-size:12px;color:var(--red)" id="gr55-cost-${g.gid}">—</div>
+          <div style="padding:8px 10px;text-align:right;font-size:12px;color:var(--red)" id="gr6-cost-${g.gid}">—</div>
+          <div style="padding:8px 10px;text-align:right;font-size:12px;color:var(--red)" id="gr95-cost-${g.gid}">—</div>
         </div>
 
         <!-- 毛利金額 -->
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid var(--border)">
-          <div style="padding:9px 14px;font-size:12px;font-weight:700">＝ 毛利</div>
-          <div style="padding:9px 14px;text-align:right;font-size:14px;font-weight:700;color:var(--green)" id="gr5-profit-${g.gid}">—</div>
-          <div style="padding:9px 14px;text-align:right;font-size:14px;font-weight:700;color:var(--accent-dark)" id="gr95-profit-${g.gid}">—</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr;border-bottom:1px solid var(--border)">
+          <div style="padding:8px 10px;font-size:12px;font-weight:700">＝ 毛利</div>
+          <div style="padding:8px 10px;text-align:right;font-size:13px;font-weight:700;color:#4a7a8a" id="grf-profit-${g.gid}">—</div>
+          <div style="padding:8px 10px;text-align:right;font-size:13px;font-weight:700;color:#2d6e4e" id="gr5-profit-${g.gid}">—</div>
+          <div style="padding:8px 10px;text-align:right;font-size:13px;font-weight:700;color:#4a8a60" id="gr55-profit-${g.gid}">—</div>
+          <div style="padding:8px 10px;text-align:right;font-size:13px;font-weight:700;color:#6a9e76" id="gr6-profit-${g.gid}">—</div>
+          <div style="padding:8px 10px;text-align:right;font-size:13px;font-weight:700;color:var(--accent-dark)" id="gr95-profit-${g.gid}">—</div>
         </div>
 
-        <!-- 毛利率 + 進度條 -->
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;background:var(--surface)">
-          <div style="padding:10px 14px;font-size:12px;color:var(--text2)">毛利率</div>
-          <div style="padding:10px 14px">
-            <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end">
-              <div style="flex:1;max-width:80px"><div class="margin-bar"><div class="margin-fill" id="gbar5-${g.gid}" style="width:0%"></div></div></div>
-              <span style="font-size:18px;font-weight:800;min-width:52px;text-align:right" id="gm5-${g.gid}">—</span>
-              <span id="gb5-${g.gid}"></span>
+        <!-- 毛利率 -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr;background:var(--surface)">
+          <div style="padding:10px 10px;font-size:12px;color:var(--text2)">毛利率</div>
+          ${['f','5','55','6','95'].map(k=>`
+          <div style="padding:10px 10px">
+            <div style="display:flex;align-items:center;gap:6px;justify-content:flex-end">
+              <div style="flex:1;max-width:60px"><div class="margin-bar"><div class="margin-fill" id="gbar${k}-${g.gid}" style="width:0%"></div></div></div>
+              <span style="font-size:16px;font-weight:800;min-width:46px;text-align:right" id="gm${k}-${g.gid}">—</span>
+              <span id="gb${k}-${g.gid}"></span>
             </div>
-          </div>
-          <div style="padding:10px 14px">
-            <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end">
-              <div style="flex:1;max-width:80px"><div class="margin-bar"><div class="margin-fill" id="gbar95-${g.gid}" style="width:0%"></div></div></div>
-              <span style="font-size:18px;font-weight:800;min-width:52px;text-align:right" id="gm95-${g.gid}">—</span>
-              <span id="gb95-${g.gid}"></span>
-            </div>
-          </div>
+          </div>`).join('')}
         </div>
 
-      </div><!-- end margin table -->
+        </div>
+      </div>
     </div><!-- end gresult -->
   </div>`;/* end card */
 }
@@ -1002,6 +1028,14 @@ function renderComboGroupHTML(g){
 function renameGroup(gid, val){
   const g=comboGroups.find(g=>g.gid===gid);
   if(g) g.name=val;
+}
+
+function onGroupItemGift(gid, itemId, checked){
+  const g=comboGroups.find(g=>g.gid===gid);
+  if(!g) return;
+  const item=g.items.find(it=>it.id===itemId);
+  if(item) item.isGift=checked;
+  calcComboGroup(gid);
 }
 
 function onGroupItemSel(gid, itemId, sel){
@@ -1067,8 +1101,16 @@ function getGroupData(gid){
     const qty=item.qty||1;
     const price=p?p.price:0, cost=p?p.cost:0, name=item.selectedName||'';
     const cvEl=document.getElementById('cv-'+item.id);
-    if(cvEl) cvEl.textContent=price?`售 ${fmt(price*qty)}  成 ${fmt(cost*qty)}`:'—';
-    if(price>0&&name){totalOrig+=price*qty;totalCost+=cost*qty;items.push({name,price,cost,qty});}
+    const isGift=item.isGift||false;
+    // 贈品：原價顯示但計算收入時視為0，成本仍計入
+    if(cvEl) cvEl.innerHTML=price
+      ?`售 ${fmt(price*qty)}  成 ${fmt(cost*qty)}${isGift?' <span style="background:#fde;color:#c04a3a;border-radius:4px;padding:0 4px;font-size:10px">贈品</span>':''}`
+      :'—';
+    if(price>0&&name){
+      totalOrig+=isGift?0:price*qty;  // 贈品不計入原價
+      totalCost+=cost*qty;
+      items.push({name,price:isGift?0:price,cost,qty,isGift});
+    }
   });
   return{totalOrig,totalCost,items};
 }
@@ -1079,7 +1121,7 @@ function calcComboGroup(gid){
   const{totalOrig,totalCost,items}=getGroupData(gid);
   const letters='ABCDEFGHIJ';
 
-  // 總覽橫幅：撓氣源寶×3 ＋ 盒炁×3 = NT$32,999
+  // 總覽橫幅：品項選完即顯示原價合計，輸入售價後才顯示售價
   const sumEl=document.getElementById('cg-summary-'+gid);
   if(sumEl){
     if(items.length){
@@ -1090,10 +1132,12 @@ function calcComboGroup(gid){
       sumEl.innerHTML=`<div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;padding:6px 2px">
         ${joined}
         <span style="color:var(--text3);font-size:15px;margin:0 5px">=</span>
+        <span style="font-size:15px;font-weight:700;color:var(--text2)">原價合計 ${fmt(totalOrig)}</span>
         ${price>0
-          ?`<span style="font-size:20px;font-weight:800;color:var(--accent-dark)">${fmt(price)}</span>
-            <span style="font-size:11px;color:var(--text3);margin-left:8px">原價合計 ${fmt(totalOrig)}</span>`
-          :`<span style="font-size:12px;color:var(--text3)">請輸入售價 ↓</span>`}
+          ?`<span style="color:var(--text3);font-size:13px;margin:0 6px">｜</span>
+            <span style="font-size:11px;color:var(--text3)">組合售價</span>
+            <span style="font-size:20px;font-weight:800;color:var(--accent-dark);margin-left:4px">${fmt(price)}</span>`
+          :''}
       </div>`;
     } else {
       sumEl.style.display='none';
@@ -1114,11 +1158,22 @@ function calcComboGroup(gid){
   // 正確毛利公式：
   // 氣機實收 = 組合售價 × 折數（5折 or 95折）← 這是氣機收到的錢
   // 毛利 = 氣機實收 - 直接成本
+  const recvF  = comboPrice;
   const recv5  = comboPrice * 0.5;
+  const recv55 = comboPrice * 0.55;
+  const recv6  = comboPrice * 0.6;
   const recv95 = comboPrice * 0.95;
+
+  const profitF  = recvF  - totalCost;
   const profit5  = recv5  - totalCost;
+  const profit55 = recv55 - totalCost;
+  const profit6  = recv6  - totalCost;
   const profit95 = recv95 - totalCost;
+
+  const marginF  = recvF>0  ? profitF/recvF*100   : 0;
   const margin5  = recv5>0  ? profit5/recv5*100   : 0;
+  const margin55 = recv55>0 ? profit55/recv55*100 : 0;
+  const margin6  = recv6>0  ? profit6/recv6*100   : 0;
   const margin95 = recv95>0 ? profit95/recv95*100 : 0;
 
   function set(id,v){const el=document.getElementById(id);if(el)el.textContent=v;}
@@ -1128,23 +1183,26 @@ function calcComboGroup(gid){
     if(m>=20)return '<span class="badge badge-amber">偏低</span>';
     return '<span class="badge badge-red">過低</span>';
   }
+  function setBar(key,m){
+    const bar=document.getElementById(`gbar${key}-${gid}`);
+    if(bar){bar.style.width=Math.min(100,Math.max(0,m))+'%';bar.className='margin-fill '+(m>=40?'margin-good':m>=20?'margin-mid':'margin-low');}
+  }
 
-  set(`gm5-${gid}`,  margin5.toFixed(1)+'%');
-  setH(`gb5-${gid}`, mkBadge(margin5));
-  set(`gr5-recv-${gid}`,   fmt(recv5));
-  set(`gr5-cost-${gid}`,   '－'+fmt(totalCost));
-  set(`gr5-profit-${gid}`, fmt(profit5));
-
-  set(`gm95-${gid}`,  margin95.toFixed(1)+'%');
-  setH(`gb95-${gid}`, mkBadge(margin95));
-  set(`gr95-recv-${gid}`,   fmt(recv95));
-  set(`gr95-cost-${gid}`,   '－'+fmt(totalCost));
-  set(`gr95-profit-${gid}`, fmt(profit95));
-
-  const bar5=document.getElementById('gbar5-'+gid);
-  if(bar5){bar5.style.width=Math.min(100,Math.max(0,margin5))+'%';bar5.className='margin-fill '+(margin5>=40?'margin-good':margin5>=20?'margin-mid':'margin-low');}
-  const bar95=document.getElementById('gbar95-'+gid);
-  if(bar95){bar95.style.width=Math.min(100,Math.max(0,margin95))+'%';bar95.className='margin-fill '+(margin95>=40?'margin-good':margin95>=20?'margin-mid':'margin-low');}
+  const cols=[
+    {k:'f', recv:recvF,  profit:profitF,  margin:marginF},
+    {k:'5', recv:recv5,  profit:profit5,  margin:margin5},
+    {k:'55',recv:recv55, profit:profit55, margin:margin55},
+    {k:'6', recv:recv6,  profit:profit6,  margin:margin6},
+    {k:'95',recv:recv95, profit:profit95, margin:margin95},
+  ];
+  cols.forEach(({k,recv,profit,margin})=>{
+    set(`gr${k}-recv-${gid}`,   fmt(recv));
+    set(`gr${k}-cost-${gid}`,   '－'+fmt(totalCost));
+    set(`gr${k}-profit-${gid}`, fmt(profit));
+    set(`gm${k}-${gid}`,        margin.toFixed(1)+'%');
+    setH(`gb${k}-${gid}`,       mkBadge(margin));
+    setBar(k, margin);
+  });
 
   updateGroup369(gid, comboPrice, totalOrig);
   updateComboOverview();
